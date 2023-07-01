@@ -1,16 +1,10 @@
+import org.breact.core.*
 import org.breact.core.Fiber
 import org.breact.core.RenderDeps
-import org.breact.core.StoreRef
-import org.breact.core.StoreRefImpl
-import org.breact.core.VirtualDomNode
-import org.breact.core.VirtualDomOperator
 import org.breact.core.createMapChild
-import org.breact.core.draftParentFiber
-import org.breact.core.revertParentFiber
 import org.breact.core.useBaseFiber
-import org.breact.core.useBeforeAttrEffect
-import org.breact.core.useMemoGet
 import org.breact.core.useParentFiber
+
 interface MapTranslate<M, T> {
     fun sizeOf(m: M): Int
     fun getAt(m: M, i: Int): T
@@ -24,7 +18,7 @@ data class MapRowRender<D>(
 )
 
 private fun createMapRef(i: Int): StoreRef<Map<Any, MutableList<Fiber>>> {
-    return StoreRefImpl(HashMap())
+    return storeRef(HashMap())
 }
 
 fun <M, K, D> useMapF(

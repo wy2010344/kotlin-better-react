@@ -9,8 +9,8 @@ version = "1.0-SNAPSHOT"
 repositories {
     mavenCentral()
 }
-
 kotlin {
+    jvmToolchain(8)
     jvm {
         compilations.all {
             kotlinOptions.jvmTarget = "1.8"

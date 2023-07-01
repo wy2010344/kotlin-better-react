@@ -5,7 +5,7 @@ interface StoreRef<T> {
     fun get(): T
 }
 
-class StoreRefImpl<T>(var value: T) : StoreRef<T> {
+private class StoreRefImpl<T>(var value: T) : StoreRef<T> {
     override fun get(): T {
         return value
     }
@@ -13,4 +13,8 @@ class StoreRefImpl<T>(var value: T) : StoreRef<T> {
     override fun set(v: T) {
         value = v
     }
+}
+
+fun <T> storeRef(value:T):StoreRef<T>{
+    return StoreRefImpl(value)
 }

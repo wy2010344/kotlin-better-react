@@ -2,8 +2,8 @@ package org.breact.core
 
 internal class EnvModel{
     lateinit var reconcile:(
-        beforeLoop: EMPTY_FUN?,
-        afterLoop:EMPTY_FUN?
+        beforeLoop: EmptyFun?,
+        afterLoop:EmptyFun?
     )->Unit
     private val draftConsumers: MutableList<ContextListener<Any?, Any?>> = mutableListOf()
     fun addDraftConsumer(v: ContextListener<Any?, Any?>) {
@@ -15,12 +15,12 @@ internal class EnvModel{
     }
 
     private val updateEffects = mapOf(
-        EFFECT_LEVEL.first to mutableListOf<EMPTY_FUN>(),
-        EFFECT_LEVEL.second to mutableListOf<EMPTY_FUN>(),
-        EFFECT_LEVEL.third to mutableListOf<EMPTY_FUN>()
+        EFFECT_LEVEL.first to mutableListOf<EmptyFun>(),
+        EFFECT_LEVEL.second to mutableListOf<EmptyFun>(),
+        EFFECT_LEVEL.third to mutableListOf<EmptyFun>()
     )
 
-    fun updateEffect(level: EFFECT_LEVEL, set: EMPTY_FUN) {
+    fun updateEffect(level: EFFECT_LEVEL, set: EmptyFun) {
         updateEffects[level]!!.add(set)
     }
 
@@ -73,7 +73,7 @@ internal class EnvModel{
         runUpdateEffect(updateEffects[EFFECT_LEVEL.third])
     }
 
-    private fun runUpdateEffect(list: MutableList<EMPTY_FUN>?) {
+    private fun runUpdateEffect(list: MutableList<EmptyFun>?) {
         list?.forEach {call->
             call(null)
         }

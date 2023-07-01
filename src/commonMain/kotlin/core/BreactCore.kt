@@ -33,7 +33,7 @@ private fun getReconcile(
     batchWork: BatchWork,
     envModel: EnvModel,
     askWork: AskNextTimeWork
-): (EMPTY_FUN?, EMPTY_FUN?) -> Unit {
+): (EmptyFun?, EmptyFun?) -> Unit {
     val workUnit = WorkUnits(envModel, batchWork)
     val askNextTimeWork = askWork {
         workUnit.getNextWork()
@@ -44,14 +44,14 @@ private fun getReconcile(
 }
 
 private fun getRec1(
-    askNextTimeWork: EMPTY_FUN,
+    askNextTimeWork: EmptyFun,
     appendWork: (work: WorkUnit) -> Unit,
-): (EMPTY_FUN?, EMPTY_FUN?) -> Unit {
+): (EmptyFun?, EmptyFun?) -> Unit {
     var batchUpdateOn = false
     val batchUpdateWorks = mutableListOf<LoopWork>()
     return fun(
-        beforeLoop: EMPTY_FUN?,
-        afterLoop: EMPTY_FUN?
+        beforeLoop: EmptyFun?,
+        afterLoop: EmptyFun?
     ): Unit {
         batchUpdateWorks.add(
             LoopWork(
@@ -226,7 +226,7 @@ internal class CurrentTick(
 }
 
 internal class RenderWorks {
-    private val list = mutableListOf<EMPTY_FUN>()
+    private val list = mutableListOf<EmptyFun>()
     fun rollback() {
         list.clear()
     }
@@ -241,11 +241,11 @@ internal class RenderWorks {
         return null
     }
 
-    fun appendWork(work: EMPTY_FUN) {
+    fun appendWork(work: EmptyFun) {
         list.add(work)
     }
 
-    fun unshiftWork(work: EMPTY_FUN) {
+    fun unshiftWork(work: EmptyFun) {
         list.add(0, work)
     }
 }
@@ -301,17 +301,17 @@ data class RealWork(
     val callback: () -> Unit
 )
 
-typealias AskNextTimeWork = (nextCall: () -> RealWork?) -> EMPTY_FUN
+typealias AskNextTimeWork = (nextCall: () -> RealWork?) -> EmptyFun
 
 sealed class WorkUnit
 data class BatchCollect(
-    val work: EMPTY_FUN
+    val work: EmptyFun
 ) : WorkUnit()
 
 data class LoopWork(
     val isLow: Boolean,
-    val beforeWork: EMPTY_FUN?,
-    val afterWork: EMPTY_FUN?
+    val beforeWork: EmptyFun?,
+    val afterWork: EmptyFun?
 ) : WorkUnit()
 
 internal enum class EFFECT_LEVEL {

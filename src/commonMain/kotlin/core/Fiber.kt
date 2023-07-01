@@ -18,7 +18,11 @@ typealias HookValueSet<F, T> = (F, ((T) -> Unit)?) -> Unit
 
 internal data class HookValue<F, T>(
     val value: StoreRef<T>,
-    val set: HookValueSet<F, T>
+    val set: HookValueSet<F, T>,
+    val reducer:Any?,
+    val init:Any?,
+    val initFun:Any?,
+   val didCommit:Any?
 )
 
 internal data class HookEffect<T>(
@@ -64,8 +68,8 @@ internal class Fiber(
             firstChild = envModel.createChangeAtom(null)
             lastChild = envModel.createChangeAtom(null)
         } else {
-            firstChild = StoreRefImpl(null)
-            lastChild = StoreRefImpl(null)
+            firstChild = storeRef(null)
+            lastChild = storeRef(null)
         }
     }
 
@@ -95,8 +99,8 @@ internal fun createFix(
 ): Fiber {
     return Fiber(
         envModel, parent, dom,
-        StoreRefImpl(null),
-        StoreRefImpl(null),
+        storeRef(null),
+        storeRef(null),
         rd,
         dynamicChild
     )
@@ -134,7 +138,7 @@ internal fun createOnChild(
     )
 }
 
-private val emptyPlace = StoreRefImpl<Fiber?>(null)
+private val emptyPlace = storeRef<Fiber?>(null)
 internal fun <T> deepTravelFiber(call: (Fiber, value: T) -> Unit) =
     fun(fiber: Fiber, v: T): Fiber? {
         call(fiber, v)

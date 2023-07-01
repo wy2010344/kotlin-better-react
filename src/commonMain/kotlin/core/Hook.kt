@@ -59,7 +59,7 @@ internal fun <T, F> buildSetValue(
                 }
             },
             if (after != null) {
-                fun(vararg:Any?) {
+                fun(vararg: Any?) {
                     after(atom.get())
                 }
             } else null
@@ -67,9 +67,16 @@ internal fun <T, F> buildSetValue(
     }
 }
 
+class ReducerResult<F, T>(
+    val value: T,
+    val dispatch: (F, ((T) -> Unit)?) -> Unit
+)
+fun <F,T> ReducerResult<F,T>.dispatch(f:F){
+    this.dispatch(f,null)
+}
 fun <F, M, T> useReducer(
-    reducer: ReducerFun<T, F>, v: M, init: (m: M) -> T, afterCommit: ((v: T) -> Unit)? = null
-): Pair<T, (F, ((T) -> Unit)?) -> Unit> {
+    reducer: ReducerFun<T, F>, init: M, initFun: (m: M) -> T, afterCommit: ((v: T) -> Unit)? = null
+): ReducerResult<F, T> {
     val pf = useParentFiber()
     val envModel = pf.first
     val parentFiber = pf.second
@@ -85,25 +92,37 @@ fun <F, M, T> useReducer(
         } else {
             ::quote
         }
-        val value = envModel.createChangeAtom(init(v), didCommit)
+        val value = envModel.createChangeAtom(initFun(init), didCommit)
         val set = buildSetValue(value, envModel, parentFiber, reducer)
         hookValues.add(
             HookValue(
-                value, set
+                value, set,
+                reducer,
+                init,
+                initFun,
+                didCommit,
             ) as HookValue<Any?, Any?>
         )
-        return Pair(value.get(), set)
+        return ReducerResult(value.get(), set)
     } else {
         val hookValues = parentFiber.hookValue ?: throw Error("原组件上不存在reducer")
         val hook = hookValues[hookIndex_state] as HookValue<F, T>
+
+        if(hook.reducer!=reducer){
+            println("useReducer的reducer变化")
+        }
+        if(hook.initFun!=initFun){
+            println("useReducer的initFun变化")
+        }
+
         hookIndex_state++
-        return Pair(hook.value.get(), hook.set)
+        return ReducerResult(hook.value.get(), hook.set)
     }
 }
 
 fun <F, T> useReducer(
     reducer: ReducerFun<T, F>, init: T, afterCommit: ((v: T) -> Unit)? = null
-): Pair<T, (F, ((T) -> Unit)?) -> Unit> {
+): ReducerResult<F, T> {
     return useReducer(reducer, init, ::quote, afterCommit)
 }
 
@@ -366,9 +385,13 @@ internal class ContextFactory<T>(
             val hookConsoumers =
                 parentFiber.hookContextCosumer ?: throw Error("原组件上不存在hookConsumers")
             val hook = hookConsoumers[hookIndex_cusomer] as ContextListener<T, M>
+            if(hook.select!==getValue){
+                println("useSelector的getValue变化")
+            }
+            if(hook.shouldUpdate!=shouldUpdate){
+                println("useSelector的shouldUpdate变化")
+            }
             hookIndex_cusomer++
-            hook.select = getValue
-            hook.shouldUpdate = shouldUpdate
             return hook.getValue()
         }
     }
