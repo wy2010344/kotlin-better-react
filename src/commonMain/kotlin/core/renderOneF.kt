@@ -17,13 +17,13 @@ private fun initCache(i: Int): OneCache {
     return OneCache(null, null)
 }
 
-fun <M> useOneF(
+fun <M> renderOneF(
     createDom: VirtualDomOperator<Any?, Any?>?,
     data: M,
     outRender: (data: M) -> OneProps<Any?>,
     outDeps: Any?
 ): VirtualDomNode<Any?>? {
-    return useBaseFiber(createDom, true, {
+    return renderBaseFiber(createDom, true, {
         draftParentFiber()
         val child = outRender(data)
         revertParentFiber()
@@ -32,7 +32,7 @@ fun <M> useOneF(
         val envModel = pl.first
         val parentFiber = pl.second
 
-        val cache = useMemoGet(::initCache, 0)()
+        val cache = useBaseMemoGet(null,::initCache, 0)()
         if (cache.key == child.key && cache.fiber != null) {
             cache.fiber!!.changeRender(RenderDeps(child.render, child.dep))
         } else {

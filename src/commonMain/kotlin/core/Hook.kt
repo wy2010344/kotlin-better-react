@@ -71,11 +71,16 @@ class ReducerResult<F, T>(
     val value: T,
     val dispatch: (F, ((T) -> Unit)?) -> Unit
 )
-fun <F,T> ReducerResult<F,T>.dispatch(f:F){
-    this.dispatch(f,null)
+
+fun <F, T> ReducerResult<F, T>.dispatch(f: F) {
+    this.dispatch(f, null)
 }
-fun <F, M, T> useReducer(
-    reducer: ReducerFun<T, F>, init: M, initFun: (m: M) -> T, afterCommit: ((v: T) -> Unit)? = null
+
+fun <F, M, T> useBaseReducer(
+    afterCommit: ((v: T) -> Unit)? = null,
+    reducer: ReducerFun<T, F>,
+    init: M,
+    initFun: (m: M) -> T,
 ): ReducerResult<F, T> {
     val pf = useParentFiber()
     val envModel = pf.first
@@ -108,10 +113,10 @@ fun <F, M, T> useReducer(
         val hookValues = parentFiber.hookValue ?: throw Error("原组件上不存在reducer")
         val hook = hookValues[hookIndex_state] as HookValue<F, T>
 
-        if(hook.reducer!=reducer){
+        if (hook.reducer != reducer) {
             println("useReducer的reducer变化")
         }
-        if(hook.initFun!=initFun){
+        if (hook.initFun != initFun) {
             println("useReducer的initFun变化")
         }
 
@@ -120,11 +125,6 @@ fun <F, M, T> useReducer(
     }
 }
 
-fun <F, T> useReducer(
-    reducer: ReducerFun<T, F>, init: T, afterCommit: ((v: T) -> Unit)? = null
-): ReducerResult<F, T> {
-    return useReducer(reducer, init, ::quote, afterCommit)
-}
 
 typealias EffectBody<T> = (T) -> ((T) -> Unit)?
 
@@ -197,8 +197,9 @@ fun <T> createChangeAtom(value: T, didCommit: (v: T) -> T = ::quote): StoreRef<T
     return pl.first.createChangeAtom(value, didCommit)
 }
 
-fun <T, V> useMemoGet(
-    effect: (dep: V) -> T, deps: V, afterCommit: ((v: T) -> Unit)? = null
+fun <T, V> useBaseMemoGet(
+    afterCommit: ((v: T) -> Unit)? = null,
+    effect: (dep: V) -> T, deps: V
 ): () -> T {
     val pf = useParentFiber()
     val envModel = pf.first
@@ -248,7 +249,7 @@ data class VirtualDomOperator<T, M>(
     val init: M
 )
 
-internal fun <T> useBaseFiber(
+internal fun <T> renderBaseFiber(
     createDom: VirtualDomOperator<Any?, Any?>?,
     dynamicChild: Boolean,
     render: (v: T) -> Unit,
@@ -298,10 +299,10 @@ internal fun <T> useBaseFiber(
     return currentDom
 }
 
-fun <T> useFiber(
+fun <T> renderFiber(
     createDom: VirtualDomOperator<Any?, Any?>?, render: (v: T) -> Unit, deps: T
 ): VirtualDomNode<Any?>? {
-    return useBaseFiber(createDom, false, render, deps)
+    return renderBaseFiber(createDom, false, render, deps)
 }
 
 interface Context<T> {
@@ -385,10 +386,10 @@ internal class ContextFactory<T>(
             val hookConsoumers =
                 parentFiber.hookContextCosumer ?: throw Error("原组件上不存在hookConsumers")
             val hook = hookConsoumers[hookIndex_cusomer] as ContextListener<T, M>
-            if(hook.select!==getValue){
+            if (hook.select !== getValue) {
                 println("useSelector的getValue变化")
             }
-            if(hook.shouldUpdate!=shouldUpdate){
+            if (hook.shouldUpdate != shouldUpdate) {
                 println("useSelector的shouldUpdate变化")
             }
             hookIndex_cusomer++

@@ -164,7 +164,7 @@ private fun notifyDel(fiber: Fiber) {
         var next = child
         while (next != null) {
             notifyDel(next)
-            next = fiber.next.get()
+            next = next.next.get()
         }
     }
 }

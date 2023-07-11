@@ -1,10 +1,10 @@
 package org.breact.helper
 
 import org.breact.core.OneProps
-import org.breact.core.useOneF
+import org.breact.core.renderOneF
 
-fun <T> useOne(key: T, render: (T) -> Unit) {
-    useOneF(null, key, {
+fun <T> renderOne(key: T, render: (T) -> Unit) {
+    renderOneF(null, key, {
         OneProps(
             key as Any,
             null,

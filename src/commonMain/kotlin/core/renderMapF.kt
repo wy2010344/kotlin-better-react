@@ -2,7 +2,7 @@ import org.breact.core.*
 import org.breact.core.Fiber
 import org.breact.core.RenderDeps
 import org.breact.core.createMapChild
-import org.breact.core.useBaseFiber
+import org.breact.core.renderBaseFiber
 import org.breact.core.useParentFiber
 
 interface MapTranslate<M, T> {
@@ -21,15 +21,15 @@ private fun createMapRef(i: Int): StoreRef<Map<Any, MutableList<Fiber>>> {
     return storeRef(HashMap())
 }
 
-fun <M, K, D> useMapF(
+fun <M, K, D> renderMapF(
     createDom: VirtualDomOperator<Any?, Any?>?,
     data: M,
     mapTranslate: MapTranslate<M, K>,
     render: (row: K, i: Int) -> MapRowRender<D>,
     deps: Any?
 ): VirtualDomNode<Any?>? {
-    return useBaseFiber(createDom, true, {
-        val mapRef = useMemoGet(::createMapRef, 0)()
+    return renderBaseFiber(createDom, true, {
+        val mapRef = useBaseMemoGet(null,::createMapRef, 0)()
         val oldMap = cloneMap(mapRef.get())
         val newMap = HashMap<Any, MutableList<Fiber>>()
         useBeforeAttrEffect {

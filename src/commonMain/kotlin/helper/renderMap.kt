@@ -2,7 +2,7 @@ package org.breact.helper
 
 import MapRowRender
 import MapTranslate
-import useMapF
+import renderMapF
 
 
 val defaultMapTranslate: MapTranslate<List<Any>, Any> = object : MapTranslate<List<Any>, Any> {
@@ -19,14 +19,14 @@ fun <T> getDefaultTranslate(): MapTranslate<List<T>, T> {
     return defaultMapTranslate as MapTranslate<List<T>, T>
 }
 
-fun <T> useMap(
+fun <T> renderMap(
     array: List<T>,
-    getKey: (v: T) -> Any,
+    getKey: (v: T,Int) -> Any,
     render: (T, Int) -> Unit
 ) {
-    useMapF(null, array, getDefaultTranslate(), { row, i ->
+    renderMapF(null, array, getDefaultTranslate(), { row, i ->
         MapRowRender(
-            getKey(row),
+            getKey(row,i),
             null,
             {
                 render(row, i)

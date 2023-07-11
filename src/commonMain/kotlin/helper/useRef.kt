@@ -1,10 +1,11 @@
 package helper
 
-import org.breact.core.StoreRef
-import org.breact.core.quote
-import org.breact.core.storeRef
-import org.breact.core.useMemoGet
+import org.breact.core.*
 
+
+fun <T,V> useMemoGet(effect: (deps: V) -> T, deps: V): () -> T {
+    return useBaseMemoGet(null,effect,deps)
+}
 fun <T, V> useMemo(effect: (deps: V) -> T, deps: V): T {
     return useMemoGet(effect, deps)()
 }
