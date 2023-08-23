@@ -23,7 +23,7 @@ fun <T> render(
     val batchWork = BatchWork(rootFiber, envModel, layout)
     val reconcile = getReconcile(batchWork, envModel, getAsk)
     envModel.reconcile = reconcile
-    reconcile(null,null)
+    reconcile(null)
     return fun() {
         batchWork.destroy()
     }
@@ -33,9 +33,9 @@ private fun getReconcile(
     batchWork: BatchWork,
     envModel: EnvModel,
     askWork: AskNextTimeWork
-): (EmptyFun?, EmptyFun?) -> Unit {
+): (EmptyFun?) -> Unit {
     val workUnit = WorkUnits(envModel, batchWork)
-    val askNextTimeWork = askWork {
+    val askNextTimeWork = askWork(envModel.realTime) {
         workUnit.getNextWork()
     }
     return getRec1(askNextTimeWork) {
@@ -46,18 +46,14 @@ private fun getReconcile(
 private fun getRec1(
     askNextTimeWork: EmptyFun,
     appendWork: (work: WorkUnit) -> Unit,
-): (EmptyFun?, EmptyFun?) -> Unit {
+): (EmptyFun?) -> Unit {
     var batchUpdateOn = false
     val batchUpdateWorks = mutableListOf<LoopWork>()
-    return fun(
-        beforeLoop: EmptyFun?,
-        afterLoop: EmptyFun?
-    ): Unit {
+    return fun(work:EmptyFun?) {
         batchUpdateWorks.add(
             LoopWork(
                 isLow = currentWorkIsLow,
-                beforeLoop,
-                afterLoop
+                work
             )
         )
         if (!batchUpdateOn) {
@@ -105,40 +101,20 @@ private class WorkUnits(
                 return RealWork(true) {
                     currentTick.open((isLow))
                     //寻找渲染前的任务
-                    var x = 0
-                    while (x < workList.size) {
-                        val work = workList[x]
+                    workList.removeAll {work->
                         if (work is LoopWork && shouldAdd(work)) {
-                            if (work.beforeWork != null) {
-                                renderWorks.appendWork(work.beforeWork)
+                            if (work.work != null) {
+                                renderWorks.appendWork(work.work)
                             }
                             currentTick.appendLowRollback(work)
+                            true
+                        }else{
+                            false
                         }
-                        x++
                     }
                     //动态添加渲染任务
                     renderWorks.appendWork {
                         batchWork.beginRender(currentTick, renderWorks)
-                    }
-                    //寻找渲染后的任务
-                    var y = 0
-                    while (y < workList.size) {
-                        val work = workList[y]
-                        if (work is LoopWork && shouldAdd(work)) {
-                            if (work.afterWork != null) {
-                                renderWorks.appendWork(work.afterWork)
-                            }
-                        }
-                        y++
-                    }
-                    //清空渲染任务
-                    var z = workList.size - 1
-                    while (z > -1) {
-                        val work = workList[z]
-                        if (work is LoopWork && shouldAdd(work)) {
-                            workList.removeAt(z)
-                        }
-                        z--
                     }
                 }
             }
@@ -256,7 +232,7 @@ internal class BatchWork(
     private val layout: () -> Unit
 ) {
     fun beginRender(currentTick: CurrentTick, renderWorks: RenderWorks) {
-        if (envModel.hasChangeAtoms() && rootFiber != null) {
+        if (envModel.shouldRender() && rootFiber != null) {
             workLoop(renderWorks, currentTick, rootFiber!!)
         }
     }
@@ -282,8 +258,10 @@ internal class BatchWork(
     fun destroy() {
         if (rootFiber != null) {
             envModel.addDelect(rootFiber!!)
-            envModel.reconcile(null) {
-                rootFiber = null
+            envModel.reconcile{
+                envModel.updateEffect(EFFECT_LEVEL.second){
+                    rootFiber = null
+                }
             }
         }
     }
@@ -301,7 +279,7 @@ data class RealWork(
     val callback: () -> Unit
 )
 
-typealias AskNextTimeWork = (nextCall: () -> RealWork?) -> EmptyFun
+typealias AskNextTimeWork = (realTime:StoreRef<Boolean>,nextCall: () -> RealWork?) -> EmptyFun
 
 sealed class WorkUnit
 data class BatchCollect(
@@ -310,8 +288,7 @@ data class BatchCollect(
 
 data class LoopWork(
     val isLow: Boolean,
-    val beforeWork: EmptyFun?,
-    val afterWork: EmptyFun?
+    val work: EmptyFun?
 ) : WorkUnit()
 
 internal enum class EFFECT_LEVEL {

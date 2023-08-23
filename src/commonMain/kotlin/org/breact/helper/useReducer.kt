@@ -1,4 +1,4 @@
-package helper
+package org.breact.helper
 
 import org.breact.core.ReducerFun
 import org.breact.core.ReducerResult
@@ -10,12 +10,12 @@ fun <F,M,T> useReducer(
     init: M,
     initFun: (m: M) -> T,
 ): ReducerResult<F, T> {
-    return useBaseReducer(null,reducer,init,initFun)
+    return useBaseReducer(reducer,init,initFun)
 }
 fun <F, T> useReducer(
     reducer: ReducerFun<T, F>, init: T
 ): ReducerResult<F, T> {
-    return useBaseReducer(null,reducer, init, ::quote)
+    return useBaseReducer(reducer, init, ::quote)
 }
 fun <T,F> useReducerFun(reducer:ReducerFun<T,F>,init:(vararg:Any?)->T): ReducerResult<F, T> {
     return useReducer(reducer,null,init)

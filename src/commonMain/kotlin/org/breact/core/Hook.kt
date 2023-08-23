@@ -44,40 +44,32 @@ typealias ReducerFun<T, F> = (T, F) -> T
 internal fun <T, F> buildSetValue(
     atom: StoreRef<T>, envModel: EnvModel, parentFiber: Fiber, reducer: ReducerFun<T, F>
 ): HookValueSet<F, T> {
-    return fun(temp: F, after: ((T) -> Unit)?) {
+    return fun(temp: F) {
         if (parentFiber.destroyed) {
             print("更新已经销毁的fiber")
             return
         }
-        envModel.reconcile(
-            {
-                val oldValue = atom.get()
-                val newValue = reducer(oldValue, temp)
-                if (newValue != oldValue) {
-                    parentFiber.effectTag.set(EffectTag.UPDATE)
-                    atom.set(newValue)
-                }
-            },
-            if (after != null) {
-                fun(vararg: Any?) {
-                    after(atom.get())
-                }
-            } else null
-        )
+        envModel.reconcile{
+            val oldValue = atom.get()
+            val newValue = reducer(oldValue, temp)
+            if (newValue != oldValue) {
+                parentFiber.effectTag.set(EffectTag.UPDATE)
+                atom.set(newValue)
+            }
+        }
     }
 }
 
 class ReducerResult<F, T>(
     val value: T,
-    val dispatch: (F, ((T) -> Unit)?) -> Unit
+    val dispatch: (F) -> Unit
 )
 
 fun <F, T> ReducerResult<F, T>.dispatch(f: F) {
-    this.dispatch(f, null)
+    this.dispatch(f)
 }
 
 fun <F, M, T> useBaseReducer(
-    afterCommit: ((v: T) -> Unit)? = null,
     reducer: ReducerFun<T, F>,
     init: M,
     initFun: (m: M) -> T,
@@ -88,24 +80,14 @@ fun <F, M, T> useBaseReducer(
     if (parentFiber.effectTag.get() == EffectTag.CREATE) {
         val hookValues = parentFiber.hookValue ?: mutableListOf()
         parentFiber.hookValue = hookValues
-
-        val didCommit = if (afterCommit != null) {
-            fun(v: T): T {
-                afterCommit(v)
-                return v
-            }
-        } else {
-            ::quote
-        }
-        val value = envModel.createChangeAtom(initFun(init), didCommit)
+        val value = envModel.createChangeAtom(initFun(init))
         val set = buildSetValue(value, envModel, parentFiber, reducer)
         hookValues.add(
             HookValue(
                 value, set,
                 reducer,
                 init,
-                initFun,
-                didCommit,
+                initFun
             ) as HookValue<Any?, Any?>
         )
         return ReducerResult(value.get(), set)
@@ -192,13 +174,12 @@ fun useEffect(effect: EffectBody<Any?>) {
     useEffect(effect, null)
 }
 
-fun <T> createChangeAtom(value: T, didCommit: (v: T) -> T = ::quote): StoreRef<T> {
+fun useGetCreateChangeAtom(): EnvInc {
     val pl = useParentFiber()
-    return pl.first.createChangeAtom(value, didCommit)
+    return pl.first
 }
 
 fun <T, V> useBaseMemoGet(
-    afterCommit: ((v: T) -> Unit)? = null,
     effect: (dep: V) -> T, deps: V
 ): () -> T {
     val pf = useParentFiber()
@@ -212,15 +193,7 @@ fun <T, V> useBaseMemoGet(
             effect(deps), deps
         )
         revertParentFiber()
-        val didCommit = if (afterCommit != null) {
-            fun(v: HookMemo<T, V>): HookMemo<T, V> {
-                afterCommit(v.value)
-                return v
-            }
-        } else {
-            ::quote
-        }
-        val hook = envModel.createChangeAtom(state, didCommit)
+        val hook = envModel.createChangeAtom(state)
         val get = fun() = hook.get().value
         hookMemos.add(HookMemoValue(get, hook) as HookMemoValue<Any?, Any?>)
         return get
@@ -482,4 +455,8 @@ internal class ContextListener<T, M>(
         context.off(this as ContextListener<T, Any?>)
     }
 
+}
+
+fun useFlushSync(): (EmptyFun) -> Unit {
+    return useParentFiber().first.flushSync
 }

@@ -1,8 +1,8 @@
 package org.breact.helper
 
-import MapRowRender
-import MapTranslate
-import renderMapF
+import org.breact.core.MapRowRender
+import org.breact.core.MapTranslate
+import org.breact.core.renderMapF
 
 
 val defaultMapTranslate: MapTranslate<List<Any>, Any> = object : MapTranslate<List<Any>, Any> {

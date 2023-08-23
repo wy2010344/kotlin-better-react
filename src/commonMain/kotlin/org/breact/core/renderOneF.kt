@@ -32,7 +32,7 @@ fun <M> renderOneF(
         val envModel = pl.first
         val parentFiber = pl.second
 
-        val cache = useBaseMemoGet(null,::initCache, 0)()
+        val cache = useBaseMemoGet(::initCache, 0)()
         if (cache.key == child.key && cache.fiber != null) {
             cache.fiber!!.changeRender(RenderDeps(child.render, child.dep))
         } else {

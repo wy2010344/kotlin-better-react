@@ -1,4 +1,4 @@
-package helper
+package org.breact.helper
 
 import org.breact.core.ReducerResult
 import org.breact.core.quote
@@ -25,10 +25,10 @@ fun <T> useChangeFun(init:(vararg :Any?)->T):ReducerResult<T,T>{
 }
 
 sealed class StateAction<T>
-data class StatePure<T>(val value:T):StateAction<T>()
-data class StateReduce<T>(val reducer:(T)->T):StateAction<T>()
+data class StatePure<T>(val value:T): StateAction<T>()
+data class StateReduce<T>(val reducer:(T)->T): StateAction<T>()
 
-private fun <T> stateReducer(old:T,action:StateAction<T>):T {
+private fun <T> stateReducer(old:T,action: StateAction<T>):T {
     return when(action){
         is StatePure<T> -> action.value
         is StateReduce<T> -> action.reducer(old)

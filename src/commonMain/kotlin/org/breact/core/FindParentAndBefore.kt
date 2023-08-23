@@ -4,23 +4,32 @@ package org.breact.core
 internal fun findParentAndBefore(fiber: Fiber) {
     val dom = fiber.dom
     if (dom != null) {
-        val prevData = fiber.before.get()
-        val parentBefore = if (prevData != null) {
-            getCurrentBefore(prevData)
-        } else {
-            findParentBefore(fiber)
+        if(dom.isPortal){
+            return
         }
+        val parentBefore= getBeforeOrParent(fiber)
         if (parentBefore != null) {
             dom.appendAfter(parentBefore.first, parentBefore.second)
         }
     }
 }
 
+private fun getBeforeOrParent(fiber:Fiber): Pair<VirtualDomNode<Any?>?, VirtualDomNode<Any?>?>? {
+    val prevData = fiber.before.get()
+    val parentBefore = if (prevData != null) {
+        getCurrentBefore(prevData)
+    } else {
+        findParentBefore(fiber)
+    }
+    return parentBefore
+}
+
 private fun findParentBefore(fiber: Fiber): Pair<VirtualDomNode<Any?>?, VirtualDomNode<Any?>?>? {
     val parent = fiber.parent
     if (parent != null) {
-        if (parent.dom != null) {
-            return Pair(parent.dom, null)
+        val dom=parent.dom
+        if (dom != null) {
+            return Pair(dom, null)
         }
         val prev = parent.before.get()
         if (prev != null) {
@@ -43,8 +52,12 @@ private fun getParentDomFiber(fiber: Fiber): Fiber {
 }
 
 private fun getCurrentBefore(fiber: Fiber): Pair<VirtualDomNode<Any?>?, VirtualDomNode<Any?>?>? {
-    if (fiber.dom != null) {
-        return Pair(getParentDomFiber(fiber).dom, fiber.dom)
+    val dom=fiber.dom
+    if (dom != null) {
+        if(dom.isPortal){
+            return getBeforeOrParent(fiber)
+        }
+        return Pair(getParentDomFiber(fiber).dom, dom)
     }
     val lastChild = fiber.lastChild.get()
     if (lastChild != null) {

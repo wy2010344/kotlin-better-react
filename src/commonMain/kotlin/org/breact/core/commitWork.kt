@@ -1,14 +1,28 @@
 package org.breact.core
 
-internal class EnvModel{
-    lateinit var reconcile:(
-        beforeLoop: EmptyFun?,
-        afterLoop:EmptyFun?
-    )->Unit
+interface EnvInc {
+    fun <T : Any?> createChangeAtom(value: T, didCommit: ((v: T) -> T)): StoreRef<T>
+}
+
+internal class EnvModel : EnvInc {
+
+    val realTime = storeRef(false)
+    val flushSync = fun(callback: EmptyFun) {
+        realTime.set(true)
+        callback(null)
+        reconcile{
+            updateEffect(EFFECT_LEVEL.first) {
+                realTime.set(false)
+            }
+        }
+    }
+
+    lateinit var reconcile: (work: EmptyFun?) -> Unit
     private val draftConsumers: MutableList<ContextListener<Any?, Any?>> = mutableListOf()
     fun addDraftConsumer(v: ContextListener<Any?, Any?>) {
         draftConsumers.add(v)
     }
+
     private val deletions: MutableList<Fiber> = mutableListOf()
     fun addDelect(fiber: Fiber) {
         deletions.add(fiber)
@@ -25,19 +39,21 @@ internal class EnvModel{
     }
 
     private val changeAtoms = mutableListOf<ChangeAtom<Any?>>()
-    private val manageChangeAtom=object :ManageValue<ChangeAtom<Any?>>{
+    private val manageChangeAtom = object : ManageValue<ChangeAtom<Any?>> {
         override fun add(v: ChangeAtom<Any?>) {
             changeAtoms.add(v)
         }
+
         override fun remove(v: ChangeAtom<Any?>) {
             changeAtoms.remove(v)
         }
     }
-    fun <T : Any?> createChangeAtom(value: T, didCommit: ((v: T) -> T)): StoreRef<T> =
+
+    override fun <T : Any?> createChangeAtom(value: T, didCommit: ((v: T) -> T)): StoreRef<T> =
         ChangeAtom(manageChangeAtom, value, didCommit)
 
-    fun hasChangeAtoms(): Boolean {
-        return changeAtoms.size > 0
+    fun shouldRender(): Boolean {
+        return changeAtoms.size > 0 || deletions.size > 0
     }
 
     fun rollback() {
@@ -55,18 +71,18 @@ internal class EnvModel{
         }
     }
 
-    fun commit(rootFiber:Fiber,layout:()->Unit) {
+    fun commit(rootFiber: Fiber, layout: () -> Unit) {
         changeAtoms.forEach {
             it.commit()
         }
         changeAtoms.clear()
+        runUpdateEffect(updateEffects[EFFECT_LEVEL.first])
         draftConsumers.clear()
         deletions.forEach {
             notifyDel(it)
             commitDeletion(it)
         }
         deletions.clear()
-        runUpdateEffect(updateEffects[EFFECT_LEVEL.first])
         runUpdateEffect(updateEffects[EFFECT_LEVEL.second])
         updateFixDom(rootFiber)
         layout()
@@ -74,12 +90,13 @@ internal class EnvModel{
     }
 
     private fun runUpdateEffect(list: MutableList<EmptyFun>?) {
-        list?.forEach {call->
+        list?.forEach { call ->
             call(null)
         }
         list?.clear()
     }
 }
+
 internal fun <T> EnvModel.createChangeAtom(value: T): StoreRef<T> {
     return createChangeAtom(value, ::quote)
 }
@@ -91,6 +108,7 @@ private class ChangeAtom<T : Any?>(
     private var whenCommit: ((v: T) -> T)
 ) : StoreRef<T> {
     private var isCreate = true
+
     init {
         manage.add(this as ChangeAtom<Any?>)
     }
@@ -146,6 +164,7 @@ private class ChangeAtom<T : Any?>(
         }
     }
 }
+
 private fun updateFixDom(_fiber: Fiber?) {
     var fiber = _fiber
     while (fiber != null) {

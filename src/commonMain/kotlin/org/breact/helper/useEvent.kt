@@ -1,4 +1,4 @@
-package helper
+package org.breact.helper
 
 fun <T:(vararg:Any?)->Any> useEvent(callback:T):T{
     val get= useAlaway(callback)

@@ -14,15 +14,14 @@ internal data class RenderDeps<T : Any?>(
 
 private fun didCommitTag(old: EffectTag) = EffectTag.EMPTY
 
-typealias HookValueSet<F, T> = (F, ((T) -> Unit)?) -> Unit
+typealias HookValueSet<F, T> = (F) -> Unit
 
 internal data class HookValue<F, T>(
     val value: StoreRef<T>,
     val set: HookValueSet<F, T>,
     val reducer:Any?,
     val init:Any?,
-    val initFun:Any?,
-   val didCommit:Any?
+    val initFun:Any?
 )
 
 internal data class HookEffect<T>(
